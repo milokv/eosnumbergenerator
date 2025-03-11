@@ -3,7 +3,13 @@ const API_URL = 'https://node1.eosphere.io/v1/chain'; // eos blockchain API URL,
 
 nonce = 0;
 let isGenerating = false;
-
+// deck of cards in order, for card generation
+const deck = [
+    "2 ♠", "3 ♠", "4 ♠", "5 ♠", "6 ♠", "7 ♠", "8 ♠", "9 ♠", "10 ♠", "J ♠", "Q ♠", "K ♠", "A ♠",  // Spades (♠)
+    "2 ♥", "3 ♥", "4 ♥", "5 ♥", "6 ♥", "7 ♥", "8 ♥", "9 ♥", "10 ♥", "J ♥", "Q ♥", "K ♥", "A ♥",  // Hearts (♥)
+    "2 ♦", "3 ♦", "4 ♦", "5 ♦", "6 ♦", "7 ♦", "8 ♦", "9 ♦", "10 ♦", "J ♦", "Q ♦", "K ♦", "A ♦",  // Diamonds (♦)
+    "2 ♣", "3 ♣", "4 ♣", "5 ♣", "6 ♣", "7 ♣", "8 ♣", "9 ♣", "10 ♣", "J ♣", "Q ♣", "K ♣", "A ♣"   // Clubs (♣)
+];
 
 
 async function fetchLatestBlock() {
@@ -12,9 +18,9 @@ async function fetchLatestBlock() {
     });
     const data = await response.json();
     const blockNum = data.head_block_num + 1; // current block number, last block # +1
-    console.log("Block URL: " + `https://eosflare.io/block/${blockNum}`)
-    console.log(Date()); // log current time for debugging (compare with eos block time)
-    return data.head_block_num;
+    console.log("Block URL: " + `https://eosauthority.com/block/${blockNum}`)
+    console.log(new Date().toISOString()); // log current (iso formatted) time for debugging (compare with eos block time)
+    return blockNum;
 }
 
 async function fetchBlockHash(blockNum) {
@@ -41,21 +47,19 @@ async function generateRandomNumber() {
         return;
     }
 
-    isGenerating = true; // lock the function
+    isGenerating = true; // lock the function while already running
 
     try {
-        const clientSeed = document.getElementById('clientSeed').value || 'defaultSeed';
+        const clientSeed = document.getElementById('clientSeed').value || "7e6fc018"; // default seed is random hex
         const nextBlockHash = await fetchNextBlockHash();
-        const numberRange = document.getElementById('numberRange').value || 1000;
+        const numberRange = Number(document.getElementById('numberRange').value) || 1000;
 
-        const combinedString = nextBlockHash + clientSeed + nonce;
+        const combinedString = nextBlockHash + clientSeed + nonce; // add client seed and nonce to the hash to make it unique
         const hashedValue = await hashData(combinedString);
-
-        const hashNum = parseInt(hashedValue.slice(0, 16), 16);
-        const randomNumber = hashNum % numberRange; // generate a number in range inputted by user
+        const randomNumber = BigInt("0x" + hashedValue) % BigInt(numberRange + 1); 
         
 
-        nonce = nonce + 1; // nonce to keep track of number of times a random number is generated, and support generating multiple random numbers with the same seed
+        nonce++; // nonce to keep track of number of times a random number is generated, and support generating multiple random numbers with the same seed
 
         console.log(`Nonce: ${nonce}, Random Number: ${randomNumber}, Hash: ${hashedValue}`);
 
@@ -64,7 +68,8 @@ async function generateRandomNumber() {
         document.getElementById('result').textContent = `Random Number: ${randomNumber}`;
     } catch (error) {
         console.error('Error fetching data:', error);
-        document.getElementById('result').textContent = 'Error fetching data. Make sure the API is running.';
+        const errorMessage = 'Error fetching data. Make sure the API is running.';
+        document.getElementById('result').textContent = errorMessage;   
     } finally {
         isGenerating = false; // unlock the function after completion
     }
@@ -79,7 +84,7 @@ async function fetchNextBlockHash(retries = 5, delay = 1000) {
             const latestBlock = await fetchLatestBlock();
             console.log(`Latest Block Number: ${latestBlock}`);
             
-            const nextBlockHash = await fetchBlockHash(latestBlock + 1);
+            const nextBlockHash = await fetchBlockHash(latestBlock);
 
             if (nextBlockHash) {
                 console.log(`Next Block Hash: ${nextBlockHash}`);
@@ -100,34 +105,32 @@ async function fetchNextBlockHash(retries = 5, delay = 1000) {
 }
 
 
-
 async function generateMultipleNumbers() {
     if (isGenerating) {
         console.warn("Already generating a number. Please wait...");
         return;
     }
 
-    isGenerating = true; // lock the function
+    isGenerating = true; // lock the function while already running
 
     try {
         const nonceBefore = nonce;
-        const n = Number(document.getElementById('amountOfNumbers').value) || 1;
+        const amountOfNumbers = Number(document.getElementById('amountOfNumbers').value) || 1;
 
-        const clientSeed = document.getElementById('clientSeed').value || 'defaultSeed';
+        const clientSeed = document.getElementById('clientSeed').value || "7e6fc018"; // default seed is random hex
         const nextBlockHash = await fetchNextBlockHash();
-        const numberRange = document.getElementById('numberRange').value || 1000;
+        const numberRange = Number(document.getElementById('numberRange').value) || 1000;
 
         document.getElementById('resultMultiple').textContent = '';
 
-
-        for (let i = nonce; i < n + nonceBefore; i = nonce) {
-            const currentCombinedString = nextBlockHash + clientSeed + nonce;
+        while (nonce < nonceBefore + amountOfNumbers) {
+            const currentCombinedString = nextBlockHash + clientSeed + nonce; // add some random string to make the hash unique, + nonce and client seed
             const currentHashedValue = await hashData(currentCombinedString);
-            currentHashNum = parseInt(currentHashedValue.slice(0, 16), 16);
-            currentRandomNumber = currentHashNum % numberRange; // generate a number in range inputted by user
+            console.log(currentHashedValue);
+            const currentRandomNumber = BigInt("0x" + currentHashedValue) % BigInt(numberRange + 1); // convert the hash to a number in the range
             nonce = nonce + 1;
             console.log(`Nonce: ${nonce}, Random Number: ${currentRandomNumber}, Hashed Value: ${currentHashedValue}`);
-            document.getElementById('resultMultiple').textContent += `${currentRandomNumber}, `;
+            document.getElementById('resultMultiple').textContent += (deck[currentRandomNumber] + ', ');
         }
         document.getElementById('resultMultiple').textContent = document.getElementById('resultMultiple').textContent.slice(0, -2); // remove trailing comma
 
@@ -135,7 +138,8 @@ async function generateMultipleNumbers() {
 
     } catch (error) {
         console.error('Error fetching data:', error);
-        document.getElementById('result').textContent = 'Error fetching data. Make sure the API is running.';
+        const errorMessage = 'Error fetching data. Make sure the API is running.';
+        document.getElementById('resultMultiple').textContent = errorMessage;        
     } finally {
         isGenerating = false; // unlock the function after completion
     }
