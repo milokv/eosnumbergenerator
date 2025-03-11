@@ -7,49 +7,12 @@
 </head>
 <body>
     <h1>EOS Random Number Generator</h1>
+    <label for="clientSeed">Client Seed:</label>
+    <input type="text" id="clientSeed" type="text" placeholder="Client Seed">
     <button onclick="generateRandomNumber()">Generate Random Number</button>
     <p id="result">Click the button to generate a number.</p>
 
-    <script>
-        const API_URL = 'https://node1.eosphere.io/v1/chain'; // Change this if needed
 
-        async function fetchLatestBlock() {
-            const response = await fetch(`${API_URL}/get_info`, {
-                method: 'POST',
-            });
-            const data = await response.json();
-            console.log("Last Block Number: " + data.head_block_num);
-            const blockNum = data.head_block_num + 1;
-            console.log("Block URL: " + `https://eosflare.io/block/${blockNum}`)
-            return data.head_block_num;
-        }
-
-        async function fetchBlockHash(blockNum) {
-            const response = await fetch(`${API_URL}/get_block`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ block_num_or_id: blockNum })
-            });
-            const data = await response.json();
-            console.log("Block Hash:" + data.id);
-            return data.id;
-        }
-
-        async function generateRandomNumber() {
-            try {
-                const latestBlock = await fetchLatestBlock();
-                const nextBlockHash = await fetchBlockHash(latestBlock + 1);
-                
-                // Convert block hash to an integer and use it as a seed
-                const hashNum = parseInt(nextBlockHash.slice(0, 16), 16);
-                const randomNumber = hashNum % 100; // Generate a number between 0-99
-                
-                document.getElementById('result').textContent = `Random Number: ${randomNumber}`;
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                document.getElementById('result').textContent = 'Error fetching data. Make sure the API is running.';
-            }
-        }
-    </script>
+    <script src="rng.js"></script>
 </body>
 </html>
