@@ -34,7 +34,7 @@ async function generateRandomNumber() {
     try {
         const clientSeed = document.getElementById('clientSeed').value || 'defaultSeed';
         const latestBlock = await fetchLatestBlock();
-        const nextBlockHash = await fetchBlockHash(latestBlock + 1); // current block number, last block # +1
+        const nextBlockHash = await fetchNextBlockHash();
         
         const combinedString = nextBlockHash + clientSeed;
         const hashedValue = await hashData(combinedString);
@@ -48,5 +48,25 @@ async function generateRandomNumber() {
     } catch (error) {
         console.error('Error fetching data:', error);
         document.getElementById('result').textContent = 'Error fetching data. Make sure the API is running.';
+    }
+}
+
+
+// fetches the hash from the next block from the "latest"
+// if the next block hasn't generated or isn't available, it retries after a 1s delay. this is needed as bad timings sometimes cause the next block to not exist when the script is run.
+async function fetchNextBlockHash(retries = 3, delay = 1000) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            const latestBlock = await fetchLatestBlock();
+            const nextBlockHash = await fetchBlockHash(latestBlock + 1);
+            return nextBlockHash; // Success, return the hash
+        } catch (error) {
+            console.warn(`Attempt ${attempt} failed. Retrying in ${delay}ms...`, error);
+            if (attempt < retries) {
+                await new Promise(resolve => setTimeout(resolve, delay)); // Wait before retrying
+            } else {
+                throw new Error("Failed to fetch next block after multiple attempts.");
+            }
+        }
     }
 }
