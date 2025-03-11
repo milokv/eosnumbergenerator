@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EOS Blackjack Game</title>
+</head>
+<body>
+    <h1>EOS Blackjack Game</h1>
+
+    <label for="clientSeed">Client Seed:</label>
+        <br>
+        <br>
+    <input type="text" id="clientSeed" type="text" placeholder="Client Seed" maxlength="8">
+        <br>
+        <br>
+        <br>
+    <label for="numberRange">Number Range:  (Generated number/numbers will be between 0 and this)</label>
+        <br>
+        <br>   
+    <input type="number" id="numberRange" placeholder="Number Range">
+    <br>
+    <br>
+    <br>
+    <p id="nonce">Nonce:</p>
+
+    <h2>Blackjack</h2>
+    <button onclick="startHand()">Deal</button>
+    <h3>Dealer's Hand</h3>
+    <br>
+    <p id="dealerHand"></p>
+    <p id="dealerScore"></p>
+    <br>
+    <h3>Player's Hand</h3>
+    <br>
+    <p id="playerHand"></p>
+    <p id="playerScore"></p>
+    <br>
+
+    <p id="result">Click the button to start a new hand.</p>
+    <p id="error"></p>
+
+
+    <script src="BJRNG.js"></script>
+</body>
+</html>
