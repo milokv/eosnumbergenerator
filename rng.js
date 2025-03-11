@@ -2,6 +2,9 @@ const API_URL = 'https://node1.eosphere.io/v1/chain'; // eos blockchain API URL,
 
 
 nonce = 0;
+let isGenerating = false;
+
+
 
 async function fetchLatestBlock() {
     const response = await fetch(`${API_URL}/get_info`, {
@@ -33,20 +36,28 @@ async function hashData(data) {
 }
 
 async function generateRandomNumber() {
+    if (isGenerating) {
+        console.warn("Already generating a number. Please wait...");
+        return;
+    }
+
+    isGenerating = true; // lock the function
+
     try {
         const clientSeed = document.getElementById('clientSeed').value || 'defaultSeed';
         const nextBlockHash = await fetchNextBlockHash();
-        
+        const numberRange = document.getElementById('numberRange').value || 1000;
+
         const combinedString = nextBlockHash + clientSeed + nonce;
         const hashedValue = await hashData(combinedString);
-        
-        console.log('Hashed Value:', hashedValue); // log hashed value for debugging
 
         const hashNum = parseInt(hashedValue.slice(0, 16), 16);
-        const randomNumber = hashNum % 1000; // Generate a number between 0-999
+        const randomNumber = hashNum % numberRange; // generate a number in range inputted by user
         
 
-        nonce = nonce + 1; //nonce to keep track of number of times a random number is generated, and support generating multiple random numbers with the same seed
+        nonce = nonce + 1; // nonce to keep track of number of times a random number is generated, and support generating multiple random numbers with the same seed
+
+        console.log(`Nonce: ${nonce}, Random Number: ${randomNumber}, Hash: ${hashedValue}`);
 
         document.getElementById('nonce').textContent = `Nonce: ${nonce}`;
 
@@ -54,6 +65,8 @@ async function generateRandomNumber() {
     } catch (error) {
         console.error('Error fetching data:', error);
         document.getElementById('result').textContent = 'Error fetching data. Make sure the API is running.';
+    } finally {
+        isGenerating = false; // unlock the function after completion
     }
 }
 
@@ -88,34 +101,42 @@ async function fetchNextBlockHash(retries = 5, delay = 1000) {
 
 
 
-async function generateRandomNumberWithNonce(n, nonceBefore) {
+async function generateMultipleNumbers() {
+    if (isGenerating) {
+        console.warn("Already generating a number. Please wait...");
+        return;
+    }
+
+    isGenerating = true; // lock the function
+
     try {
+        const nonceBefore = nonce;
+        const n = Number(document.getElementById('amountOfNumbers').value) || 1;
+
         const clientSeed = document.getElementById('clientSeed').value || 'defaultSeed';
         const nextBlockHash = await fetchNextBlockHash();
-        
-        const combinedString = nextBlockHash + clientSeed + nonce;
-        const hashedValue = await hashData(combinedString);
-        
-        console.log('Hashed Value:', hashedValue); // log hashed value for debugging
+        const numberRange = document.getElementById('numberRange').value || 1000;
 
-        const hashNum = parseInt(hashedValue.slice(0, 16), 16);
-        const randomNumber = hashNum % 1000; // Generate a number between 0-999
-        
+        document.getElementById('resultMultiple').textContent = '';
+
+
         for (let i = nonce; i < n + nonceBefore; i = nonce) {
             const currentCombinedString = nextBlockHash + clientSeed + nonce;
             const currentHashedValue = await hashData(currentCombinedString);
             currentHashNum = parseInt(currentHashedValue.slice(0, 16), 16);
-            currentRandomNumber = currentHashNum % 1000; // Generate a number between 0-999
+            currentRandomNumber = currentHashNum % numberRange; // generate a number in range inputted by user
             nonce = nonce + 1;
-            console.log("Nonce: " + nonce + " Random Number: " + currentRandomNumber + " Hash: " + currentHashedValue);
+            console.log(`Nonce: ${nonce}, Random Number: ${currentRandomNumber}, Hashed Value: ${currentHashedValue}`);
+            document.getElementById('resultMultiple').textContent += `${currentRandomNumber}, `;
         }
-
+        document.getElementById('resultMultiple').textContent = document.getElementById('resultMultiple').textContent.slice(0, -2); // remove trailing comma
 
         document.getElementById('nonce').textContent = `Nonce: ${nonce}`;
 
-        document.getElementById('result').textContent = `Random Number: ${randomNumber}`;
     } catch (error) {
         console.error('Error fetching data:', error);
         document.getElementById('result').textContent = 'Error fetching data. Make sure the API is running.';
+    } finally {
+        isGenerating = false; // unlock the function after completion
     }
 }

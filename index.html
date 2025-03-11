@@ -7,11 +7,31 @@
 </head>
 <body>
     <h1>EOS Random Number Generator</h1>
+
     <label for="clientSeed">Client Seed:</label>
+        <br>
+        <br>
     <input type="text" id="clientSeed" type="text" placeholder="Client Seed">
+        <br>
+        <br>
+        <br>
+    <label for="numberRange">Number Range:  (Generated number/numbers will be between 0 and this)</label>
+        <br>
+        <br>   
+    <input type="number" id="numberRange" placeholder="Number Range">
+
+    <h2>Generate one number:</h2>
     <button onclick="generateRandomNumber()">Generate Random Number</button>
     <p id="result">Click the button to generate a number.</p>
     <p id="nonce">Nonce: 0</p>
+
+    <h2>Generate multiple numbers:</h2>
+    <input id="amountOfNumbers" type="number" placeholder="Amount of Numbers">
+        <br>
+        <br>
+    <button onclick="generateMultipleNumbers()">Generate Random Numbers</button>
+    <h3>Results:</h3>
+    <p id="resultMultiple"></p>
 
     <script src="rng.js"></script>
 </body>
