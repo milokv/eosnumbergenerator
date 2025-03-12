@@ -16,67 +16,215 @@ const deckValues = [
     2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11, // Diamonds (♦)
     2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11  // Clubs (♣)
 ];
+// 12 25 38 51
 
 let playerHand = [];
 let dealerHand = [];
-let hands = [];
 let playerScore = 0;
 let dealerScore = 0;
 let playerBlackjack = false;
 let dealerBlackjack = false;
 let playerBust = false;
 let dealerBust = false;
+let playerTurn = false; // track if its players turn
+let playerAces = 0; // track if player used an ace to reduce score
+let playerConvertedAces = 0; // track how many aces were converted to 1
+let dealerAces = 0; // track if dealer used an ace to reduce score
+let dealerConvertedAces = 0; // track how many aces were converted to 1
 
+document.getElementById("hitButton").addEventListener("click", playerHit);
+document.getElementById("stayButton").addEventListener("click", playerStay);
 
 async function startHand() {
+    // reset game state
     playerHand = [];
     dealerHand = [];
-    hands = [];
     playerScore = 0;
     dealerScore = 0;
     playerBlackjack = false;
     dealerBlackjack = false;
     playerBust = false;
     dealerBust = false;
-
-
-    playerHand.push(await generateRandomNumber());
-    document.getElementById('playerHand').textContent = `Player Hand: ${deck[playerHand[0]]}, ?`;
-    playerScore = deckValues[playerHand[0]];
-    dealerHand.push(await generateRandomNumber());
+    playerTurn = true;
+    playerAces = 0;
+    playerConvertedAces = 0;
+    dealerAces = 0;
+    dealerConvertedAces = 0;
+    document.getElementById('playerHand').textContent = `Player Hand: `;
+    document.getElementById('dealerHand').textContent = `Dealer Hand: `;
+    document.getElementById('playerScore').textContent = `Player Score: 0`;
+    document.getElementById('dealerScore').textContent = `Dealer Score: 0`;
+    // deal first cards
+    document.getElementById('result').textContent = `Dealing first player card...`;
+    playerHand.push(12);
+    document.getElementById('playerHand').textContent = `Player Hand: ${deck[playerHand[0]]}`;
+    document.getElementById('result').textContent = `Dealing first dealer card...`;
+    dealerHand.push(12);
     document.getElementById('dealerHand').textContent = `Dealer Hand: ${deck[dealerHand[0]]}, ?`;
-    dealerScore = 11;
-    playerHand.push(await generateRandomNumber());
+    document.getElementById('result').textContent = `Dealing second player card...`;
+    playerHand.push(12);
     document.getElementById('playerHand').textContent = `Player Hand: ${deck[playerHand[0]]}, ${deck[playerHand[1]]}`;
+    document.getElementById('result').textContent = `Dealing second dealer card...`;
+    dealerHand.push(12);
+
+    // calculate initial scores
     playerScore = deckValues[playerHand[0]] + deckValues[playerHand[1]];
-    dealerHand.push(await generateRandomNumber());
+    dealerScore = deckValues[dealerHand[0]];
+
+    // display initial hands
+    document.getElementById('playerHand').textContent = `Player Hand: ${deck[playerHand[0]]}, ${deck[playerHand[1]]}`;
+    document.getElementById('dealerHand').textContent = `Dealer Hand: ${deck[dealerHand[0]]}, ?`;
     document.getElementById('playerScore').textContent = `Player Score: ${playerScore}`;
-    console.log(playerScore);
-    document.getElementById('dealerScore').textContent = `Dealer Score: ${dealerScore}`;
-    console.log(dealerScore);
-    if (dealerScore == 11) {
-        if (deckValues[dealerHand[1]] == 10 && playerScore != 21) {
-            console.log(deckValues[dealerHand[1]]);
-            dealerScore = 21;
-            document.getElementById('dealerScore').textContent = `Dealer Score: ${dealerScore}`;
-            document.getElementById('result').textContent = `Dealer has Blackjack!`;
-            console.log("dealer blackjack");
-            document.getElementById('dealerHand').textContent = `Dealer Hand: ${deck[dealerHand[0]]}, ${deck[dealerHand[1]]}`; // show dealer hand
-            return;
-        }
-        else {
-            document.getElementById('result').textContent = `Dealer does not have Blackjack!`;
-            console.log("no blackjack");
-            return;
-        }
-        return
+    document.getElementById('dealerScore').textContent = `Dealer Score: ${dealerScore}`; // hide full dealer score
+    dealerScore = deckValues[dealerHand[0]] + deckValues[dealerHand[1]];
+
+    // check for 2 aces
+    if (playerScore == 22) {
+        playerScore -= 10;
+        playerAces = 0;
+        playerConvertedAces = 1;
+        document.getElementById('playerScore').textContent = `Player Score: ${playerScore}`;
     }
-    if (playerScore == 21) {
-        document.getElementById('result').textContent = `Player has Blackjack!`;
+    if (dealerScore == 22) {
+        dealerScore -= 10;
+        dealerAces = 0;
+        dealerConvertedAces = 1;
+        document.getElementById('dealerScore').textContent = `Dealer Score: ${dealerScore}`;
+    }
+
+    // Check for Blackjack
+    if (dealerScore == 21 && playerScore != 21) {
+        dealerBlackjack = true;
+        revealDealerHand();
+        document.getElementById('result').textContent = `Dealer has Blackjack!`;
+        playerTurn = false;
+        return;
+    } 
+    else if (playerScore == 21 && dealerScore == 21) {
+        document.getElementById('result').textContent = `It's a Tie!`;
+    }
+    else if (playerScore == 21) {
         playerBlackjack = true;
+        document.getElementById('result').textContent = `Player has Blackjack!`;
+        playerTurn = false;
+        revealDealerHand();
         return;
     }
+    else {
+        playerTurn = true;
+        document.getElementById('result').textContent = `Hit or Stay?`; // player's turn
+    }
 }
+
+async function playerHit() {
+    if (!playerTurn) return; // stop if player already stayed
+    document.getElementById('result').textContent = `Hitting...`;
+    let newCard = await generateRandomNumber();
+    playerHand.push(newCard);
+    document.getElementById('result').textContent = `Hit or Stay?`;
+    playerScore += deckValues[newCard];
+
+    // Update UI
+    document.getElementById('playerHand').textContent = `Player Hand: ${playerHand.map(card => deck[card]).join(', ')}`;
+    document.getElementById('playerScore').textContent = `Player Score: ${playerScore}`;
+
+    // Check if player busts
+    if (playerScore > 21) {
+        console.log("player score over 21, converting aces maybe");
+
+        // Count the number of Aces in the hand
+        for (let i in playerHand) {
+            if (deckValues[playerHand[i]] == 11) {
+                playerAces++;
+                console.log("player aces: " + playerAces);
+            }
+        }
+    
+        // Convert Aces from 11 to 1 until the score is under 21
+        while (playerScore > 21 && playerAces > playerConvertedAces) {
+            playerScore -= 10;
+            playerAces = 0;
+            playerConvertedAces++;
+            console.log("player aces after conversion" + playerAces);
+            console.log(`Ace converted! New Score: ${playerScore}`);
+            document.getElementById('playerScore').textContent = `Player Score: ${playerScore}`;
+        }
+
+        if (playerScore > 21) {
+            playerBust = true;
+            document.getElementById('result').textContent = `Player Busted!`;
+            playerTurn = false;
+            revealDealerHand();
+            return;
+        }
+    }
+    if (playerScore == 21) {
+        playerTurn = false;
+        document.getElementById('result').textContent = `You have 21! Dealer's turn.`;
+        revealDealerHand();
+        dealerTurn();
+    }
+}
+
+function playerStay() {
+    if (!playerTurn) return;
+
+    playerTurn = false;
+    document.getElementById('result').textContent = `You stayed. Dealer's turn.`;
+    revealDealerHand();
+    dealerTurn();
+}
+
+function revealDealerHand() {
+    document.getElementById('dealerHand').textContent = `Dealer Hand: ${dealerHand.map(card => deck[card]).join(', ')}`;
+    document.getElementById('dealerScore').textContent = `Dealer Score: ${dealerScore}`;
+}
+
+async function dealerTurn() {
+    let i = 0;
+    while (dealerScore < 17) {
+        document.getElementById('result').textContent = `Dealer Hitting...`;
+        dealerHand.push(await generateRandomNumber());
+        dealerScore += deckValues[dealerHand[2+i]];
+        if (dealerScore > 21) {
+            console.log("dealer score over 21, converting aces maybe");
+
+            // Count the number of Aces in the hand
+            for (let i in dealerHand) {
+                if (deckValues[dealerHand[i]] == 11) {
+                    dealerAces++;
+                    console.log("dealer aces: " + dealerAces);
+                }
+            }
+        
+            // Convert Aces from 11 to 1 until the score is under 21
+            while (dealerScore > 21 && dealerAces > dealerConvertedAces) {
+                dealerScore -= 10;
+                dealerAces = 0; // Only remove 1 Ace at a time
+                dealerConvertedAces++;
+                console.log("dealer aces after conversion" + dealerAces);
+                console.log(`Ace converted! New Score: ${dealerScore}`);
+                document.getElementById('dealerScore').textContent = `Dealer Score: ${dealerScore}`;
+            }
+        }
+        i++;
+        document.getElementById('dealerHand').textContent = `Dealer Hand: ${dealerHand.map(card => deck[card]).join(', ')}`;
+        document.getElementById('dealerScore').textContent = `Dealer Score: ${dealerScore}`;
+    }
+
+
+    if (dealerScore > 21) {
+        dealerBust = true;
+        document.getElementById('result').textContent = `Dealer Busted! You Win!`;
+    } else if (dealerScore > playerScore) {
+        document.getElementById('result').textContent = `Dealer Wins!`;
+    } else if (dealerScore < playerScore) {
+        document.getElementById('result').textContent = `You Win!`;
+    } else {
+        document.getElementById('result').textContent = `It's a Tie!`;
+    }
+}
+
 
 async function fetchLatestBlock() {
     const response = await fetch(`${API_URL}/get_info`, {
@@ -143,7 +291,7 @@ async function generateRandomNumber() {
 
 // fetches the hash from the next block from the "latest"
 // if the next block hasn't generated or isn't available, it retries after a 1s delay. this is needed as bad timings sometimes cause the next block to not exist when the script is run.
-async function fetchNextBlockHash(retries = 5, delay = 300) {
+async function fetchNextBlockHash(retries = 6, delay = 150) {
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
             const latestBlock = await fetchLatestBlock();
