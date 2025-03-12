@@ -22,6 +22,10 @@ let dealerHand = [];
 let hands = [];
 let playerScore = 0;
 let dealerScore = 0;
+let playerBlackjack = false;
+let dealerBlackjack = false;
+let playerBust = false;
+let dealerBust = false;
 
 
 async function startHand() {
@@ -30,19 +34,29 @@ async function startHand() {
     hands = [];
     playerScore = 0;
     dealerScore = 0;
-    await generateMultipleNumbers(52);
-    playerHand.push(hands[0]);
-    dealerHand.push(hands[1]);
-    playerHand.push(hands[2]);
-    dealerHand.push(hands[3]);
-    document.getElementById('playerHand').textContent = `Player Hand: ${deck[playerHand[0]]}, ${deck[playerHand[1]]}`;
+    playerBlackjack = false;
+    dealerBlackjack = false;
+    playerBust = false;
+    dealerBust = false;
+
+
+    playerHand.push(await generateRandomNumber());
+    document.getElementById('playerHand').textContent = `Player Hand: ${deck[playerHand[0]]}, ?`;
+    playerScore = deckValues[playerHand[0]];
+    dealerHand.push(await generateRandomNumber());
     document.getElementById('dealerHand').textContent = `Dealer Hand: ${deck[dealerHand[0]]}, ?`;
+    dealerScore = 11;
+    playerHand.push(await generateRandomNumber());
+    document.getElementById('playerHand').textContent = `Player Hand: ${deck[playerHand[0]]}, ${deck[playerHand[1]]}`;
     playerScore = deckValues[playerHand[0]] + deckValues[playerHand[1]];
-    dealerScore = deckValues[dealerHand[0]];
+    dealerHand.push(await generateRandomNumber());
     document.getElementById('playerScore').textContent = `Player Score: ${playerScore}`;
+    console.log(playerScore);
     document.getElementById('dealerScore').textContent = `Dealer Score: ${dealerScore}`;
+    console.log(dealerScore);
     if (dealerScore == 11) {
-        if (deckValues[dealerHand[1]] == 10, playerScore != 21) {
+        if (deckValues[dealerHand[1]] == 10 && playerScore != 21) {
+            console.log(deckValues[dealerHand[1]]);
             dealerScore = 21;
             document.getElementById('dealerScore').textContent = `Dealer Score: ${dealerScore}`;
             document.getElementById('result').textContent = `Dealer has Blackjack!`;
@@ -55,9 +69,11 @@ async function startHand() {
             console.log("no blackjack");
             return;
         }
+        return
     }
     if (playerScore == 21) {
         document.getElementById('result').textContent = `Player has Blackjack!`;
+        playerBlackjack = true;
         return;
     }
 }
@@ -103,16 +119,17 @@ async function generateRandomNumber() {
         const clientSeed = document.getElementById('clientSeed').value || "7e6fc018"; // default seed is random hex
         const nextBlockHash = await fetchNextBlockHash();
 
-        const combinedString = nextBlockHash + clientSeed + nonce; // add client seed and nonce to the hash to make it unique
+        const combinedString = nextBlockHash + clientSeed + nonce; // add some random string to make the hash unique, + nonce and client seed
         const hashedValue = await hashData(combinedString);
-        const randomNumber = BigInt("0x" + hashedValue) % BigInt(52); 
-        
-
+        console.log(hashedValue);
+        const randomNumber = BigInt("0x" + hashedValue) % BigInt(52); // convert the hash to a number in the range
         nonce++; // nonce to keep track of number of times a random number is generated, and support generating multiple random numbers with the same seed
-
-        console.log(`Nonce: ${nonce}, Random Number: ${randomNumber}, Hash: ${hashedValue}`);
-
+        const randomInt = Number(randomNumber);
+        console.log(`Nonce: ${nonce}, Random Number: ${randomNumber}, Hashed Value: ${hashedValue}`);
+        
         document.getElementById('nonce').textContent = `Nonce: ${nonce}`;
+
+        return randomInt;
 
     } catch (error) {
         console.error('Error fetching data:', error);
@@ -126,7 +143,7 @@ async function generateRandomNumber() {
 
 // fetches the hash from the next block from the "latest"
 // if the next block hasn't generated or isn't available, it retries after a 1s delay. this is needed as bad timings sometimes cause the next block to not exist when the script is run.
-async function fetchNextBlockHash(retries = 5, delay = 1000) {
+async function fetchNextBlockHash(retries = 5, delay = 300) {
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
             const latestBlock = await fetchLatestBlock();
