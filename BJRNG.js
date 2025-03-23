@@ -14,8 +14,16 @@ const deckValues = [
     2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11, // Diamonds (♦)
     2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11  // Clubs (♣)
 ];
-// 12 25 38 51
 
+const deckSVG = [
+    "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s", "10s", "Js", "Qs", "Ks", "As",  // Spades (♠)
+    "2h", "3h", "4h", "5h", "6h", "7h", "8h", "9h", "10h", "Jh", "Qh", "Kh", "Ah",  // Hearts (♥)
+    "2d", "3d", "4d", "5d", "6d", "7d", "8d", "9d", "10d", "Jd", "Qd", "Kd", "Ad",  // Diamonds (♦)
+    "2c", "3c", "4c", "5c", "6c", "7c", "8c", "9c", "10c", "Jc", "Qc", "Kc", "Ac",  // Clubs (♣)
+    "unknown" // face down card
+];
+
+let inGame = false;
 let balance = 1000;
 let betAmount = 0;
 let isGenerating = false;
@@ -45,6 +53,11 @@ document.getElementById("balance").textContent = "Balance:  " + balance;
 
 async function startHand() {
     // reset game state
+    if (inGame) {
+        document.getElementById('result').textContent = `Finish the current game first!`;
+        return;
+    }
+    inGame = true;
     generatedDeck = [];
     playerHand = [];
     dealerHand = [];
@@ -60,6 +73,8 @@ async function startHand() {
     dealerAces = 0;
     dealerConvertedAces = 0;
     currentCard = 3;
+    document.getElementById('playerHand2').innerHTML = "";
+    document.getElementById('dealerHand2').innerHTML = "";
     betAmount = Number(document.getElementById('betAmount').value);
     if (betAmount > balance) {
         document.getElementById('result').textContent = `You don't have enough balance!`;
@@ -77,13 +92,17 @@ async function startHand() {
     document.getElementById('result').textContent = `Dealing first player card...`;
     playerHand.push(generatedDeck[0]);
     document.getElementById('playerHand').textContent = `Player Hand: ${deck[playerHand[0]]}`;
+    addPlayerCardSVG(playerHand[0]);
     document.getElementById('result').textContent = `Dealing first dealer card...`;
     dealerHand.push(generatedDeck[1]);    
     document.getElementById('dealerHand').textContent = `Dealer Hand: ${deck[dealerHand[0]]}, ?`;
+    addDealerCardSVG(dealerHand[0]);
     document.getElementById('result').textContent = `Dealing second player card...`;
     playerHand.push(generatedDeck[2]);
     document.getElementById('playerHand').textContent = `Player Hand: ${deck[playerHand[0]]}, ${deck[playerHand[1]]}`;
+    addPlayerCardSVG(playerHand[1]);
     document.getElementById('result').textContent = `Dealing second dealer card...`;
+    addDealerCardSVG(52); // add face down card
     dealerHand.push(generatedDeck[3]);
 
     // calculate initial scores
@@ -115,6 +134,7 @@ async function startHand() {
         revealDealerHand();
         document.getElementById('result').textContent = `Dealer has Blackjack!`;
         playerTurn = false;
+        inGame = false;
         return;
     } 
     else if (playerScore == 21 && dealerScore == 21) {
@@ -132,13 +152,21 @@ async function startHand() {
         playerCanSplit = true;
         playerCanDouble = true;
         playerTurn = true;
-        document.getElementById('result').textContent = `Hit, Stay, Split or Double?`;
+        document.getElementById('result').textContent = `Hit, Stay, Split or Double?`; // offer split if player has a pair
     }
     else {
         playerTurn = true;
         playerCanDouble = true;
         document.getElementById('result').textContent = `Hit, Stay or Double?`; // player's turn
     }
+}
+
+async function addPlayerCardSVG(cardID) {
+    document.getElementById('playerHand2').innerHTML = document.getElementById('playerHand2').innerHTML + `<img src="cardDeckSVG/${deckSVG[cardID]}.svg" alt="card" width="100" height="150">`;
+}
+
+async function addDealerCardSVG(cardID) {
+    document.getElementById('dealerHand2').innerHTML = document.getElementById('dealerHand2').innerHTML + `<img src="cardDeckSVG/${deckSVG[cardID]}.svg" alt="card" width="100" height="150">`;
 }
 
 async function playerHit() {
@@ -148,6 +176,7 @@ async function playerHit() {
     currentCard++;
     let newCard = generatedDeck[currentCard];
     playerHand.push(newCard);
+    addPlayerCardSVG(newCard);
     document.getElementById('result').textContent = `Hit or Stay?`;
     playerScore += deckValues[newCard];
 
@@ -178,6 +207,7 @@ async function playerHit() {
             document.getElementById('result').textContent = `Player Busted!`;
             playerTurn = false;
             revealDealerHand();
+            inGame = false;
             return;
         }
     }
@@ -208,6 +238,7 @@ function playerDouble() {
 
     // Update UI
     document.getElementById('playerHand').textContent = `Player Hand: ${playerHand.map(card => deck[card]).join(', ')}`;
+    addPlayerCardSVG(newCard);
     document.getElementById('playerScore').textContent = `Player Score: ${playerScore}`;
 
     // Check if player busts
@@ -261,20 +292,25 @@ function playerStay() {
 function playerWin() {
     balance += 2 * betAmount;
     document.getElementById('balance').textContent = `Balance: ${balance}`;
+    inGame = false;
 }
 
 function playerTie() {
     balance += betAmount;
     document.getElementById('balance').textContent = `Balance: ${balance}`;
+    inGame = false;
 }
 
 function playerBlackjack() {
     balance += betAmount * 2.5;
     document.getElementById('balance').textContent = `Balance: ${balance}`;
+    inGame = false;
 }
 
 function revealDealerHand() {
     document.getElementById('dealerHand').textContent = `Dealer Hand: ${dealerHand.map(card => deck[card]).join(', ')}`;
+    document.getElementById('dealerHand2').innerHTML = "";
+    document.getElementById('dealerHand2').innerHTML = `<img src="cardDeckSVG/${deckSVG[dealerHand[0]]}.svg" alt="card" width="100" height="150">` + `<img src="cardDeckSVG/${deckSVG[dealerHand[1]]}.svg" alt="card" width="100" height="150">`;
     document.getElementById('dealerScore').textContent = `Dealer Score: ${dealerScore}`;
 }
 
@@ -303,6 +339,7 @@ async function dealerTurn() {
         }
         i++;
         document.getElementById('dealerHand').textContent = `Dealer Hand: ${dealerHand.map(card => deck[card]).join(', ')}`;
+        addDealerCardSVG(dealerHand[1+i]);
         document.getElementById('dealerScore').textContent = `Dealer Score: ${dealerScore}`;
     }
 
@@ -313,6 +350,7 @@ async function dealerTurn() {
         playerWin();
     } else if (dealerScore > playerScore) {
         document.getElementById('result').textContent = `Dealer Wins!`;
+        inGame = false;
     } else if (dealerScore < playerScore) {
         document.getElementById('result').textContent = `You Win!`;
         playerWin();
