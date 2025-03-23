@@ -52,11 +52,11 @@ document.getElementById("doubleButton").addEventListener("click", playerDouble);
 document.getElementById("balance").textContent = "Balance:  " + balance;
 
 async function startHand() {
-    // reset game state
     if (inGame) {
         document.getElementById('result').textContent = `Finish the current game first!`;
         return;
     }
+    // reset game state
     inGame = true;
     generatedDeck = [];
     playerHand = [];
@@ -390,6 +390,16 @@ async function hashData(data) {
     return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
+// generate a random number from a hash for testing purposes
+// this function is not used in the game
+async function testGenerateFromHash(input) {
+    const hashedValue = await hashData(input);
+    console.log(hashedValue);
+    const randomNumber = BigInt("0x" + hashedValue) % BigInt(52); // convert the hash to a number in the range
+    console.log(Number(randomNumber));
+    return;
+}
+
 async function generateRandomNumber() {
     if (isGenerating) {
         console.warn("Already generating a number. Please wait...");
@@ -466,7 +476,7 @@ async function generateMultipleNumbers(amountOfNumbers) {
         const nextBlockHash = await fetchNextBlockHash();
         let i = 0;
         while (i < amountOfNumbers) {
-            const currentCombinedString = nextBlockHash + clientSeed + i; // add some random string to make the hash unique, + nonce and client seed
+            const currentCombinedString = nextBlockHash + clientSeed + i + nonce; // add client seed and the number of times a random number is generated to make the hash unique for every number + nonce
             const currentHashedValue = await hashData(currentCombinedString);
             console.log(currentHashedValue);
             const currentRandomNumber = BigInt("0x" + currentHashedValue) % BigInt(52); // convert the hash to a number in the range
